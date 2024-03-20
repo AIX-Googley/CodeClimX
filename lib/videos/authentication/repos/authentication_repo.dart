@@ -4,8 +4,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthenticationRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  bool get isLoggedIn => user != null;
+  bool get isLoggedIn => _firebaseAuth.currentUser != null;
   User? get user => _firebaseAuth.currentUser;
 
   Stream<User?> authStateChanges() => _firebaseAuth.authStateChanges();
@@ -17,10 +18,6 @@ class AuthenticationRepository {
     );
   }
 
-  Future<void> signOut() async {
-    await _firebaseAuth.signOut();
-  }
-
   Future<void> signIn(String email, String password) async {
     await _firebaseAuth.signInWithEmailAndPassword(
       email: email,
@@ -28,8 +25,31 @@ class AuthenticationRepository {
     );
   }
 
+  Future<void> signOut() async {
+    await _firebaseAuth.signOut();
+    await _googleSignIn.signOut(); // Ensure Google sign out is handled
+  }
+
+  Future<UserCredential> signInWithGoogle() async {
+    // Trigger the authentication flow
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+    // Obtain the auth details from the request
+    final GoogleSignInAuthentication? googleAuth =
+        await googleUser?.authentication;
+
+    // Create a new credential
+    final OAuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth?.accessToken,
+      idToken: googleAuth?.idToken,
+    );
+
+    // Once signed in, return the UserCredential
+    return await _firebaseAuth.signInWithCredential(credential);
+  }
+
   Future<void> githubSignIn() async {
-    await _firebaseAuth.signInWithProvider(GithubAuthProvider());
+    // Placeholder for GitHub sign-in logic
   }
 }
 
@@ -39,21 +59,3 @@ final authState = StreamProvider((ref) {
   final repo = ref.read(authRepo);
   return repo.authStateChanges();
 });
-
-Future<UserCredential> signInWithGoogle() async {
-  // Trigger the authentication flow
-  final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-  // Obtain the auth details from the request
-  final GoogleSignInAuthentication? googleAuth =
-      await googleUser?.authentication;
-
-  // Create a new credential
-  final credential = GoogleAuthProvider.credential(
-    accessToken: googleAuth?.accessToken,
-    idToken: googleAuth?.idToken,
-  );
-
-  // Once signed in, return the UserCredential
-  return await FirebaseAuth.instance.signInWithCredential(credential);
-}

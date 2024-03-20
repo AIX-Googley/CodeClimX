@@ -1,13 +1,15 @@
 import 'package:codeclimx/videos/authentication/login_screen.dart';
+import 'package:codeclimx/videos/authentication/repos/authentication_repo.dart';
 import 'package:codeclimx/videos/authentication/username_screen.dart';
 import 'package:codeclimx/videos/authentication/widgets/auth_button.dart';
 import 'package:codeclimx/videos/constants/gaps.dart';
 import 'package:codeclimx/videos/constants/sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class SignUpScreen extends StatelessWidget {
+class SignUpScreen extends ConsumerWidget {
   static const routeURL = "/";
   static const routeName = "signUp";
   const SignUpScreen({super.key});
@@ -26,7 +28,7 @@ class SignUpScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -62,9 +64,19 @@ class SignUpScreen extends StatelessWidget {
                 ),
               ),
               Gaps.v16,
-              const AuthButton(
-                icon: FaIcon(FontAwesomeIcons.google),
-                text: "Continue with Google",
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    await ref.read(authRepo).signInWithGoogle();
+                    GoRouter.of(context).go('/home');
+                  } catch (e) {
+                    // 오류 처리 로직, 예: 사용자에게 오류 메시지 표시
+                  }
+                },
+                child: const AuthButton(
+                  icon: FaIcon(FontAwesomeIcons.google),
+                  text: "Continue with Google",
+                ),
               ),
             ],
           ),
